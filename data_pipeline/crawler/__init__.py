@@ -1,4 +1,4 @@
 """爬虫包"""
-from crawler.jobsdb import JobsdbCrawler
+from .jobsdb import JobsdbCrawler
 
 __all__ = ["JobsdbCrawler"]
