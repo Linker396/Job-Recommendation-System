@@ -6,13 +6,15 @@
   - 滑动完成后自动继续抓取
 
 输出三个文件：
-  - jobs_raw.json     原始数据（含 sensorsdata JSON 和详情链接）
-  - jobs_cleaned.json 清洗后数据（统一字段格式）
-  - jobs.json          最终去重数据（最多 200 条）
+  - datasets/raw/jobs_raw.json           原始数据（含 sensorsdata JSON 和详情链接）
+  - datasets/interim/jobs_cleaned.json   清洗后数据（统一字段格式）
+  - datasets/processed/jobs.json         最终去重数据（最多 200 条）
 """
 import json
 import sys
 import time
+from pathlib import Path
+
 from loguru import logger
 
 logger.remove()
@@ -23,9 +25,15 @@ logger.add(
     colorize=False,
 )
 
-from crawler import JobsdbCrawler
-from processor import JobProcessor
-from config import KEYWORDS, CITIES_51JOB, PAGE_SIZE, MAX_PAGES, MAX_RECORDS
+from .crawler import JobsdbCrawler
+from .processor import JobProcessor
+from .config import KEYWORDS, CITIES_51JOB, PAGE_SIZE, MAX_PAGES, MAX_RECORDS
+
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+RAW_OUTPUT = ROOT_DIR / "datasets/raw/jobs_raw.json"
+INTERIM_OUTPUT = ROOT_DIR / "datasets/interim/jobs_cleaned.json"
+PROCESSED_OUTPUT = ROOT_DIR / "datasets/processed/jobs.json"
 
 
 def main():
@@ -79,22 +87,25 @@ def main():
 
     # ========== 输出三个文件 ==========
     processor = JobProcessor()
+    RAW_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    INTERIM_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    PROCESSED_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 
     # 1. 原始数据
-    with open("jobs_raw.json", "w", encoding="utf-8") as f:
+    with RAW_OUTPUT.open("w", encoding="utf-8") as f:
         json.dump(raw_all, f, ensure_ascii=False, indent=2)
-    logger.info(f"[1/3] 原始数据已保存: jobs_raw.json ({len(raw_all)} 条)")
+    logger.info(f"[1/3] 原始数据已保存: {RAW_OUTPUT} ({len(raw_all)} 条)")
 
     # 2. 清洗后数据
-    with open("jobs_cleaned.json", "w", encoding="utf-8") as f:
+    with INTERIM_OUTPUT.open("w", encoding="utf-8") as f:
         json.dump(cleaned_all, f, ensure_ascii=False, indent=2)
-    logger.info(f"[2/3] 清洗后数据已保存: jobs_cleaned.json ({len(cleaned_all)} 条)")
+    logger.info(f"[2/3] 清洗后数据已保存: {INTERIM_OUTPUT} ({len(cleaned_all)} 条)")
 
     # 3. 去重数据
     final_jobs = processor.process(cleaned_all)
     final_jobs = final_jobs[:MAX_RECORDS]
 
-    with open("jobs.json", "w", encoding="utf-8") as f:
+    with PROCESSED_OUTPUT.open("w", encoding="utf-8") as f:
         json.dump(final_jobs, f, ensure_ascii=False, indent=2)
 
     has_desc = sum(1 for j in final_jobs if j.get("jobDescribe"))

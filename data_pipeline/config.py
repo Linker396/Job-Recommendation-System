@@ -33,7 +33,7 @@ PAGE_SIZE = 50
 MAX_PAGES = 1
 
 # 输出 JSON 文件
-OUTPUT_FILE = "jobs.json"
+OUTPUT_FILE = "datasets/processed/jobs.json"
 
 # 最大记录总数
 MAX_RECORDS = 200
